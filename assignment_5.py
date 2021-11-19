@@ -1,6 +1,6 @@
 # Use the walrus operator (:=) to improve this code
 # The walrus  allows you to both assign and return a variable in the same expression
-# Like so: print(beerPrice := 9.99)
+# Like so:
 print(beerPrice := 9.99)
 
 def count_long_words(chunk):
