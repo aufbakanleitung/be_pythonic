@@ -1,0 +1,100 @@
+Quick confession: since it’s introduction in Python 3.8 I’ve never used the walrus operator that much. When it was first introduced I dismissed it as syntactic sugar and couldn’t really find a reason to use it. In this article we’ll find out whether it just improves our code’s readability or if it’s more that that. We’ll go through some practical use-cases for this obscure operator that’ll make your life easier. At the end of this article you’ll:
+Understand what the walrus operator does
+Know how to use one
+Recognize situations in which to use the walrus operator.
+0. What is the walrus operator?
+Let’s start at the beginning. The walrus operator looks like this :=. It allows you to both assign and return a variable in the same expression. Check out the code blocks below
+beerPrice = 9.99
+print(beerPrice)
+On line 1 we assign the value 9.99 to a variable named ‘beerprice’ using the = operator. Then, on line 2, we print the variable. using the walrus operator we can do both of these operations in one:
+print(beerPrice := 9.99)
+Now we both print out the beerPrice, that we’ve set to 9.99, in addition we can use the variable for other uses. Easy! Let’s now find out why we would need this functionality and what it means for our code.
+1. Use cases for the walrus operator
+In this part we’ll apply the operator. I’ll try to illustrate this with a project that resembles a real-life application as much as possible. In my opinion this works a bit better than the “foo” an “bar” examples.
+
+Let’s put this fella to work (image by NOAA on Unsplash)
+I’ve identified a few situations in which the walrus operator could be practical. First a bit about our project, then we’ll walk through each situation.
+Setup
+We are a company analyzes books for analytical purposes. We’ve set up a nice API that allows users to send books to us. The API saves the book-files to disk after which we can analyze their content.
+1. Reading files
+Our first goal is to read the text files. Remember that we don’t know which sizes the books are; people might send us encyclopedia’s that are gigabytes! For this reason we want to read the book in chunks.
+""" The inferior non-walrussy way """
+openedBook = open('c:/bookDirectory/lotr_1.txt')
+longWordCount:int = 0
+while True:
+    chunk = openedBook.read(8192)
+    if (chunk == ''):
+        break
+    longWordCount += count_long_words(chunk=chunk)
+print(longWordCount)
+In this piece of code we read a book in chunks of 8192 bytes. We send it to a function that counts words that are longer than 10 characters. Notice that we have to check if the chunk contains data. If we don’t do this then the while loop won’t terminate and we’re stuck. Let’s find out how we can improve this code using the walrus.
+""" Walrus power! """
+openedBook = open(os.path.join(booksFolder, book))
+longWordCount: int = 0
+while chunk := openedBook.read(8192):
+    longWordCount += count_long_words(chunk=chunk)
+print(longWordCount)
+You’ll notice that our code is much cleaner now. The magic is in the 5th line. We assign the content of the opened book to the chunk and use it for determining whether we should loop. Much nicer!
+2. Matching regex patterns
+Let’s imagine our client is a librarian that wants to ad a difficulty class to the book. In order to have an idea of the difficulty we’re going to analyze the text. We’re reading the book in the chunks we’ve used before and now we are going to use RegEx (Regular Expressions) to find some difficult words, which we’ve defined as words containing either a q or an x.
+# The Old way
+openedBook = open(os.path.join(booksFolder, book))
+while chunk := openedBook.read(8192):
+    match = re.findall("\w*[xXqQ]\w*", chunk)
+    if (match == []):
+        continue
+    print(len(list(set(match))))
+In the code above we’re finding all words that match the particular regex defined in line 4 (\w*[xXqQ]\w* means: Find all words that contain an x, X, q or Q). This function returns an empty list by default so we’ll have to check in whether we found something in line 5 and 6. Lastly we print out the count of the unique number of matches.
+# Walrus way
+openedBook = open(os.path.join(booksFolder, book))
+while chunk := openedBook.read(8192):
+    if ((match := re.findall(pattern, chunk)) != []):
+        print(len(list(set(match))))
+When we use the walrus operator we can perform the regex findall and assign its results to the match variable if there are matches! Despite improving performance a tiny bit (3.1 milliseconds), doing it this way improves readability most.
+3. Shared subexpression in a list comprehension
+Next step: we want to analyze all the difficult words we’ve found in the regex section above. We’ll first stem every word, check if the stem is longer than 8 characters and if this is the case: keep the stems. Stems are the root of a verb by the way: playing→ play, plays→ play, am, are, is → be etc. In this article we won’t get into how this works, just assume we have a function for stemming words called stem_word(). We can do this in three ways:
+The conventional way
+This uses a standard for loop. The greatest disadvantage is that this is pretty slow due to the number of operations. Concerning readability: that it’s a lot of lines for a simple operation.
+my_matches = []
+for w in matches:
+    s = stem_word(w)
+    if (len(s)) >= 10:
+        my_matches.append(s)
+print('l', my_matches)
+The lazy way
+Let’s be a little more Pythonic about this and use a list comprehension. The advantage is that we reduce the 5 lines we needed before to just one. Also we improve performance by quite a bit; this way is roughly 25% faster than the conventional way. The downside: we have to call the expensive stem_word() function twice. This is unacceptably inefficient.
+fmatches = [stem_word(w) for w in matches if len(stem_word(w)) >= 8]
+The Walrus way
+With our beloved operator we can combine the previous two: not only do we have all our code in one line, enhancing readability and performance through a list comprehension, also we only have to call our expensive stem_word() function only once.
+smatches = [s for w in matches if len(s := stem_word(w)) >= 8]
+4. Reuse a value that’s expensive to compute
+Once a word is stemmed we’d like to translate it to Dutch, German and Spanish. Assume we have functions for translating a word. The main deal here is that the stem_word() function is very expensive but we need the result of this function to translate it into the four languages (English and the other three). With the walrus operator it looks like this:
+word = 'diving'
+translations = [s := stem_word(word), translate_dutch(s), translate_german(s), translate_spanish(s)]
+Notice that we construct a list that only calls the stem_word() function once, stores it to the variable s and then uses that variable to call the translation functions. We end up with an array containing the translated stems in four languages!
+5. Retrieving from dictionaries
+Imagine we have a dictionary about our current user that looks like this.
+userdata = {
+    'firstname': 'mike',
+    'lastname': 'huls',
+    'beaverage': 'coffee'
+}
+We want to retrieve a value from the dictionary so we need to supply a key. We’re not sure which keys are present, that’s all up what data the user provided. The safest and quickest, conventional way is:
+age = settings.get(key)
+if (age):
+    print(age)
+We use the get method that exists on our dictionary object. It either returns the key’s value or None, if the key doesn’t exist. Let’s see how we can apply the walrus operator.
+if (age := settings.get(key)):
+    print(age)
+Again we can combine setting the age variable in combination with the expression of checking whether the value exists.
+Bringing it all together → when to walrus
+Taking a look at all of our examples we conclude that they can be summarized in two situations:
+assign a value if it exists (1, 2 and 5)
+Reuse an expensive-to-calculate value in an iterable (3 and 4)
+The first class offers a small improvement in performance. Thanks to the walrus operator we can reduce the number of statements since we can combine assigning the variable and checking whether it exists. The main improvement, however, is in the readability of the code; reducing the number of lines.
+The second class offers both improved readability and performance. The main reason for this is that we use list comprehensions and the fact that the walrus operator allows us to only call expensive functions once.
+
+This polar bear now knows how to handle his walruses (image by Caterina Sanders on Unsplash)
+Conclusion
+The walrus operator offers a little improvement in performance but is mostly a way to write more readable and concise code. There are some specific situations that the walrus can solve, like calling an expensive function twice in a list comprehensions, but this situation can be easily avoided by just implementing a conventional loop. Nevertheless I’ve started using the walrus operator for enhancing my code’s readability when “assigning if exists” (situation 1). The other situation that details reusing expensive to calculate values is pretty rare in my daily work; I usually avoid these situations like described before.
+I hope I shed some light on this controversial operator. Please let me know if you have any use-cases in which this operator shines by leaving a comment. Happy coding!

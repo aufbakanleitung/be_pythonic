@@ -1,5 +1,3 @@
-# learned these tricks from https://www.youtube.com/watch?v=cKPlPJyQrt4
-
 # Creating a generator
 from time import sleep
 

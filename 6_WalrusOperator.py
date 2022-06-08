@@ -12,7 +12,7 @@ def count_long_words(chunk):
 
 # Refactor this using :=
 def run():
-    openedBook = open("input_assignment7.txt")
+    openedBook = open("input_6_WalrusOperator.txt")
     longWordCount = 0
     while chunk := openedBook.read(8192):
         longWordCount += count_long_words(chunk=chunk)
