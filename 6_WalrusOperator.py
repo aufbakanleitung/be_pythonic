@@ -1,32 +1,26 @@
-# ctx.py
 
-from _sqlite3 import connect
+# Use the walrus operator (:=) to improve this code
+# The walrus  allows you to both assign and return a variable in the same expression
+# Like so: print(beerPrice := 9.99)
 
-hello_list = ["hello"]
+def count_long_words(chunk):
+    count = 0
+    for word in chunk.split():
+        if len(word) >= 7:
+            count += 1
+    return count
 
-if hello_list is type(list):
-    print("yes")
+# Refactor this using :=
+def run():
+    openedBook = open("input_assignment7.txt")
+    longWordCount:int = 0
+    # Read file in chunks in case it's very large
+    while True:
+        chunk = openedBook.read(8192)
+        if (chunk == ''):
+            break
+        longWordCount += count_long_words(chunk=chunk)
+    print(longWordCount)
 
-print(id(1))
-a = 1
-print(id(a))
-
-
-class Temptable:
-    def __init__(self, curl):
-        self.cur = cur
-    def __enter__(self):
-        self.cur.execute('create table points(x int, y int)')
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cur.execute('drop table points')
-
-
-with connect('test.db') as conn:
-    cur = conn.cursor()
-    with Temptable(cur):
-        # cur.execute('create table points(x int, y int)')
-        cur.execute('insert into points (x, y) values(1, 2)')
-        cur.execute('insert into points (x, y) values(3, 4)')
-        cur.execute('insert into points (x, y) values(4, 5)')
-        for row in cur.execute('select x, y from points'):
-            print(row)
+if __name__ == "__main__":
+    run()
